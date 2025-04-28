@@ -4,13 +4,31 @@ from datetime import datetime
 from docx import Document
 import re
 import os
+import sys
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
-# 1. Caminhos
-caminho_documents = Path.home() / "Documents"
-caminho_excel = caminho_documents / "ciclo.XLS"
-caminho_docx = caminho_documents / "CICLO.docx"
+# 1. Função para detectar caminho real no PyInstaller
+def resource_path(relative_path):
+    """Pega o caminho real do arquivo, dentro ou fora do PyInstaller"""
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS) / relative_path
+    return Path(__file__).parent / relative_path
 
-# 2. Função para limpar nomes de pacientes
+# 2. Função para abrir a janela de seleção do ciclo.XLS
+def selecionar_arquivo_xls():
+    root = tk.Tk()
+    root.withdraw()  # Esconde a janela principal
+    caminho_arquivo = filedialog.askopenfilename(
+        title="Selecione o arquivo ciclo.XLS",
+        filetypes=[("Arquivos Excel", "*.xls")]
+    )
+    if not caminho_arquivo:
+        messagebox.showerror("Erro", "Nenhum arquivo selecionado. O programa será encerrado.")
+        exit()
+    return Path(caminho_arquivo)
+
+# 3. Função para limpar nome dos pacientes
 def limpar_nome_paciente(nome):
     if isinstance(nome, str):
         partes = nome.split(',')
@@ -20,26 +38,30 @@ def limpar_nome_paciente(nome):
             return nome.strip()
     return nome
 
-# 3. Ler Excel
+# 4. Definir caminhos
+caminho_docx = resource_path("CICLO.docx")
+caminho_excel = selecionar_arquivo_xls()
+
+# 5. Ler Excel
 dados = pd.read_excel(caminho_excel, engine='xlrd')
 
-# 4. Filtrar apenas consultas "CONSULTA NO CONSULTO"
+# 6. Filtrar apenas "CONSULTA NO CONSULTO"
 dados_filtrado = dados[dados['psv_cid'] == "CONSULTA NO CONSULTO"]
 
-# 5. Nome do médico
+# 7. Nome do médico
 nome_medico_excel = dados_filtrado['psv_apel'].iloc[0].strip()
-nome_medico_final = f"DR. {nome_medico_excel}"  # adiciona DR. antes do nome
+nome_medico_final = f"DR. {nome_medico_excel}"
 
-# 6. CRM
-crm_numero = str(dados_filtrado['fle_psv_cod'].iloc[0])  # só o número
+# 8. CRM
+crm_numero = str(dados_filtrado['fle_psv_cod'].iloc[0])
 
-# 7. Pacientes
+# 9. Lista de pacientes
 pacientes = dados_filtrado['pac_nome'].dropna().apply(limpar_nome_paciente).tolist()
 
-# 8. Data Atual
+# 10. Data Atual
 data_hoje = datetime.now().strftime('%d/%m/%Y')
 
-# 9. Ler Word
+# 11. Ler documento Word
 doc = Document(caminho_docx)
 
 # Atualizar Médico, Data e CRM nos parágrafos
@@ -55,7 +77,7 @@ for paragrafo in doc.paragraphs:
     if "CRM:" in paragrafo.text:
         paragrafo.text = re.sub(r"(CRM:\s*)\d+", f"CRM: {crm_numero}", paragrafo.text)
 
-# Atualizar Médico, Data e CRM nas tabelas também
+# Atualizar Médico, Data e CRM nas tabelas
 for tabela in doc.tables:
     for linha in tabela.rows:
         for celula in linha.cells:
@@ -83,8 +105,15 @@ if len(doc.tables) > 1:
         else:
             print(f"⚠️ Mais pacientes do que células disponíveis! Paciente ignorado: {nome}")
 
-# 10. Salvar novo Word
-novo_docx = caminho_documents / "CICLO_ATUALIZADO.docx"
+# 12. Salvar o novo documento no Desktop
+desktop_path = Path.home() / "Desktop"
+novo_docx = desktop_path / "CICLO_ATUALIZADO.docx"
 doc.save(novo_docx)
-os.startfile(novo_docx) # Abre o arquivo após salvar
+
 print(f"✅ Documento Word atualizado salvo em: {novo_docx}")
+
+# 13. Abrir o documento automaticamente
+if novo_docx.exists():
+    os.startfile(novo_docx)
+else:
+    print("❌ Erro: não foi possível encontrar o arquivo salvo.")
