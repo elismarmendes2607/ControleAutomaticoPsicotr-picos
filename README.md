@@ -8,7 +8,7 @@ Projeto para automação de atualização de documentos Word (`.docx`) e arquivo
 
 - 📝 Atualiza automaticamente o nome do médico no documento (`DR. Nome` em negrito)
 - 📅 Atualiza a data da receita para o dia atual
-- 🆔 Atualiza apenas o número do CRM no campo existente (`CRM: 11077`)
+- 🆔 Atualiza apenas o número do CRM no campo existente (`CRM:" " `)
 - 👤 Atualiza os nomes dos pacientes na tabela do Word
 - 🚀 Abre o documento Word atualizado automaticamente após gerar
 
@@ -43,7 +43,4 @@ Projeto para automação de atualização de documentos Word (`.docx`) e arquivo
 4. Salvar o arquivo Word atualizado como `CICLO_ATUALIZADO.docx`.
 5. Abrir automaticamente o documento finalizado.
 
----
-
-## 📂 Estrutura de Pastas
 
